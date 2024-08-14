@@ -1,15 +1,23 @@
 const Cosmetic = require("../models/Cosmetic");
 const Category = require("../models/Category");
+const Shop = require("../models/Shop");
 
 class CosmeticController {
   async createCosmetic(req, res, next) {
     try {
-      const { name } = req.body;
+      const { name, shop_id } = req.body;
       if (!name) {
         return res.status(400).json({ message: "Name is required" });
       }
+      if (shop_id) {
+        const shopExists = await Shop.findById(shop_id);
+        if (!shopExists) {
+          return res.status(400).json({ message: "Invalid shop_id" });
+        }
+      }
       const newCosmetic = new Cosmetic({
         name,
+        shop_id,
       });
       await newCosmetic.save();
       return res.status(200).json({
@@ -25,12 +33,12 @@ class CosmeticController {
     try {
       const cosmetics = await Cosmetic.find();
       const cosmeticsWithCategories = await Promise.all(
-        cosmetics.map(async (Cosmetic) => {
+        cosmetics.map(async (cosmetic) => {
           const categories = await Category.find({
-            Cosmetic_id: Cosmetic._id,
+            cosmetic_id: cosmetic._id,
           });
           return {
-            ...Cosmetic._doc,
+            ...cosmetic._doc,
             categories,
           };
         })
@@ -45,17 +53,17 @@ class CosmeticController {
 
   async getCosmeticById(req, res) {
     try {
-      const CosmeticId = req.params.id;
-      const Cosmetic = await Cosmetic.findById(CosmeticId);
-      if (!Cosmetic) {
+      const cosmeticId = req.params.id;
+      const cosmetic = await Cosmetic.findById(cosmeticId);
+      if (!cosmetic) {
         return res.status(404).json({ message: "Cosmetic not found" });
       }
-      const categories = await Category.find({ Cosmetic_id: Cosmetic._id });
-      const CosmeticWithCategories = {
-        ...Cosmetic._doc,
+      const categories = await Category.find({ cosmetic_id: cosmetic._id });
+      const cosmeticWithCategories = {
+        ...cosmetic._doc,
         categories,
       };
-      return res.status(200).json(CosmeticWithCategories);
+      return res.status(200).json(cosmeticWithCategories);
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
@@ -66,16 +74,16 @@ class CosmeticController {
       const CosmeticId = req.params.id;
       const name = req.body.name;
 
-      const Cosmetic = await Cosmetic.findById(CosmeticId);
-      if (!Cosmetic) {
+      const cosmetic = await Cosmetic.findById(CosmeticId);
+      if (!cosmetic) {
         return res.status(404).json({ message: "Cosmetic not found" });
       }
-      if (name) Cosmetic.name = name;
+      if (name) cosmetic.name = name;
 
-      await Cosmetic.save();
+      await cosmetic.save();
       return res.status(200).json({
-        message: `Cosmetic updated successfully: ${Cosmetic.name}.`,
-        data: Cosmetic,
+        message: `Cosmetic updated successfully: ${cosmetic.name}.`,
+        data: cosmetic,
       });
     } catch (error) {
       res.status(500).json({ message: error.message });

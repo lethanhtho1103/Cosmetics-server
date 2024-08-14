@@ -6,9 +6,9 @@ const Category = new Schema({
     type: String,
     required: true,
   },
-  accessory_id: {
+  cosmetic_id: {
     type: mongoose.Types.ObjectId,
-    ref: "Accessory",
+    ref: "Cosmetic",
   },
 });
 

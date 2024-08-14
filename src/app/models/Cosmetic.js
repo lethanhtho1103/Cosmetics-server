@@ -6,6 +6,10 @@ const Cosmetic = new Schema({
     type: String,
     required: true,
   },
+  shop_id: {
+    type: mongoose.Types.ObjectId,
+    ref: "Shop",
+  },
 });
 
 module.exports = mongoose.model("Cosmetic", Cosmetic);
