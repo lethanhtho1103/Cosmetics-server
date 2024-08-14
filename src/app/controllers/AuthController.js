@@ -42,7 +42,7 @@ class AuthController {
               path: "/",
             });
             return res.status(200).json({
-              message: "Register user successfully.",
+              message: "Đăng ký thành công.",
               data: user,
               accessToken,
             });
@@ -101,7 +101,10 @@ class AuthController {
           path: "/",
         });
         const { password, ...props } = user._doc;
-        res.status(200).json({ props, accessToken });
+
+        res
+          .status(200)
+          .json({ props, accessToken, message: "Đăng nhập thành công." });
       }
     } catch (error) {
       console.log(error);
