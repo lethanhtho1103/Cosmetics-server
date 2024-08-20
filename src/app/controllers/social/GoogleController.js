@@ -14,8 +14,10 @@ const configLoginWithGoogle = () => {
       async (accessToken, refreshToken, profile, done) => {
         console.log("Checking google: ", profile);
         const { failure, success } = await googleAuth.registerWithGoogle(
-          profile
+          profile,
+          accessToken
         );
+
         const user = failure || success;
         if (user) {
           console.log(
@@ -27,7 +29,7 @@ const configLoginWithGoogle = () => {
           const token = jwt.sign(
             { userInfo: user.data },
             process.env.JWT_ACCESS_TOKEN,
-            { expiresIn: "1h" }
+            { expiresIn: "3h" }
           );
           user.token = token;
           return done(null, user);

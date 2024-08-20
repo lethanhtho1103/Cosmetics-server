@@ -1,7 +1,7 @@
 const User = require("../app/models/User");
 
 const googleAuthDal = {
-  registerWithGoogle: async (oauthUser) => {
+  registerWithGoogle: async (oauthUser, accessToken) => {
     const isUserExists = await User.findOne({
       email: oauthUser.emails[0].value,
       type: "GOOGLE",
@@ -11,6 +11,7 @@ const googleAuthDal = {
         status: 400,
         message: "User already Registered.",
         data: isUserExists,
+        accessToken,
       };
       return { failure };
     }
@@ -31,6 +32,7 @@ const googleAuthDal = {
       status: 200,
       message: "User Registered.",
       data: newUser,
+      accessToken,
     };
     return { success };
   },
@@ -61,6 +63,7 @@ const googleAuthDal = {
       type: "FACEBOOK",
     });
     const newUser = await user.save();
+
     const success = {
       status: 200,
       message: "User Registered.",

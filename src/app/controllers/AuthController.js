@@ -31,6 +31,7 @@ class AuthController {
               address,
               avatar,
               admin: false,
+              type: "LOCAL",
             });
             const user = await newUser.save();
             const authController = new AuthController();
@@ -100,15 +101,44 @@ class AuthController {
           secure: false,
           path: "/",
         });
-        const { password, ...props } = user._doc;
+        const { password, ...data } = user._doc;
 
         res
           .status(200)
-          .json({ props, accessToken, message: "Đăng nhập thành công." });
+          .json({ data, accessToken, message: "Đăng nhập thành công." });
       }
     } catch (error) {
       console.log(error);
     }
+  }
+
+  // REFRESH TOKEN
+  async requestRefreshToken(req, res) {
+    const refreshToken = req.cookies.refresh_token;
+    if (!refreshToken) {
+      return res.status(403).json("You're not authenticated");
+    }
+    if (!refreshTokens.includes(refreshToken)) {
+      return res.status(403).json("Refresh Token is not valid");
+    }
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN, (err, user) => {
+      if (err) {
+        return res.status(403).json("Token is not valid");
+      }
+      refreshTokens = refreshTokens.filter(
+        (token) => token !== req.cookies.refresh_token
+      );
+      // Create new accessToken and refreshToken
+      const newAccessToken = AuthController.generateAccessToken(user);
+      const newRefreshToken = AuthController.generateRefreshToken(user);
+      refreshTokens.push(newRefreshToken);
+      res.cookie("refresh_token", newRefreshToken, {
+        httpOnly: true,
+        secure: false,
+        path: "/",
+      });
+      res.status(200).json({ accessToken: newAccessToken });
+    });
   }
 
   async logoutUser(req, res) {
