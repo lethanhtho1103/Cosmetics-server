@@ -6,14 +6,12 @@ class CategoryController {
   async createCategory(req, res, next) {
     try {
       const { name, cosmetic_id } = req.body;
-
       if (!name) {
         return res.status(400).json({ message: "Name is required" });
       }
-
       if (cosmetic_id) {
-        const CosmeticExists = await Cosmetic.findById(cosmetic_id);
-        if (!CosmeticExists) {
+        const cosmeticExists = await Cosmetic.findById(cosmetic_id);
+        if (!cosmeticExists) {
           return res.status(400).json({ message: "Invalid cosmetic_id" });
         }
       }
@@ -22,8 +20,13 @@ class CategoryController {
         name,
         cosmetic_id,
       });
-
       await newCategory.save();
+
+      if (cosmetic_id) {
+        await Cosmetic.findByIdAndUpdate(cosmetic_id, {
+          $push: { category_ids: newCategory._id },
+        });
+      }
       return res.status(200).json({
         message: `Category created successfully: ${name}.`,
         data: newCategory,

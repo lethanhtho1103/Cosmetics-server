@@ -10,6 +10,12 @@ const Cosmetic = new Schema({
     type: mongoose.Types.ObjectId,
     ref: "Shop",
   },
+  category_ids: [
+    {
+      type: mongoose.Types.ObjectId,
+      ref: "Category",
+    },
+  ],
 });
 
 module.exports = mongoose.model("Cosmetic", Cosmetic);

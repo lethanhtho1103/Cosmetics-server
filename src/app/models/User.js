@@ -26,6 +26,9 @@ const User = new Schema({
     type: String,
     minLength: 5,
   },
+  phone: {
+    type: String,
+  },
   avatar: {
     type: String,
     default: null,

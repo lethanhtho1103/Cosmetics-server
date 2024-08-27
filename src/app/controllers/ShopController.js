@@ -26,17 +26,34 @@ class ShopController {
       const shops = await Shop.find();
       const ShopsWithCosmetics = await Promise.all(
         shops.map(async (shop) => {
-          const Cosmetics = await Cosmetic.find({
-            shop_id: shop._id,
-          });
+          const Cosmetics = await Cosmetic.aggregate([
+            { $match: { shop_id: shop._id } }, // Lọc các cosmetics theo shop_id
+            {
+              $lookup: {
+                from: "categories", // Tên collection của Category
+                localField: "category_ids", // Thay đổi từ category_id thành category_ids
+                foreignField: "_id",
+                as: "categories",
+              },
+            },
+            {
+              $project: {
+                name: 1, // Lấy tên của Cosmetic
+                shop_id: 1, // Giữ lại shop_id
+                categories: {
+                  _id: 1, // Lấy id từ categories
+                  name: 1, // Lấy name từ categories
+                },
+              },
+            },
+          ]);
+
           return {
             ...shop._doc,
             Cosmetics,
           };
         })
       );
-
-      // Return the result
       return res.status(200).json(ShopsWithCosmetics);
     } catch (error) {
       return res.status(500).json({ message: error.message });
