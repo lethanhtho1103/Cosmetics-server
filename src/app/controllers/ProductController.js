@@ -62,108 +62,56 @@ class ProductController {
     });
   }
 
-  async getAllProducts(req, res) {
+  async getAllProductsByCategoryName(req, res) {
     try {
-      const query = {};
       const {
-        name,
-        description,
-        specifications,
-        cpu_type,
-        ram,
-        storage,
-        display,
-        graphics,
-        connectivity,
-        mouse_keyboard,
-        size,
-        weight,
-        color,
-        warranty,
-        other_features,
-        manufacturer,
-        model,
-        screenType,
-        brightness,
-        contrastRatio,
-        screenSize,
-        panelType,
-        viewingAngle,
-        responseTime,
-        conectivity,
-        aspectRatio,
-        refreshRate,
-        recommendedResolution,
-        review,
-        mainboard,
-        radiators,
-        hardDrive,
-        card,
-        caseTower,
-        psu,
-        material,
-        high,
-        mouseType,
-        utilities,
-        ergonomics,
-        requestSystem,
-        guarantee,
-        keyboardType,
-        hearType,
+        categoryName,
+        sortBy = "name",
+        order = "asc",
+        minPrice = 0,
+        maxPrice = Infinity,
+        trademark = [],
       } = req.query;
 
-      // Xây dựng truy vấn động
-      if (name) query.name = new RegExp(name, "i");
-      if (description) query.description = new RegExp(description, "i");
-      if (specifications)
-        query.specifications = new RegExp(specifications, "i");
-      if (cpu_type) query.cpu_type = new RegExp(cpu_type, "i");
-      if (ram) query.ram = new RegExp(ram, "i");
-      if (storage) query.storage = new RegExp(storage, "i");
-      if (display) query.display = new RegExp(display, "i");
-      if (graphics) query.graphics = new RegExp(graphics, "i");
-      if (connectivity) query.connectivity = new RegExp(connectivity, "i");
-      if (mouse_keyboard)
-        query.mouse_keyboard = new RegExp(mouse_keyboard, "i");
-      if (size) query.size = new RegExp(size, "i");
-      if (weight) query.weight = new RegExp(weight, "i");
-      if (color) query.color = new RegExp(color, "i");
-      if (warranty) query.warranty = new RegExp(warranty, "i");
-      if (other_features)
-        query.other_features = new RegExp(other_features, "i");
-      if (manufacturer) query.manufacturer = new RegExp(manufacturer, "i");
-      if (model) query.model = new RegExp(model, "i");
-      if (screenType) query.screenType = new RegExp(screenType, "i");
-      if (brightness) query.brightness = new RegExp(brightness, "i");
-      if (contrastRatio) query.contrastRatio = new RegExp(contrastRatio, "i");
-      if (screenSize) query.screenSize = new RegExp(screenSize, "i");
-      if (panelType) query.panelType = new RegExp(panelType, "i");
-      if (viewingAngle) query.viewingAngle = new RegExp(viewingAngle, "i");
-      if (responseTime) query.responseTime = new RegExp(responseTime, "i");
-      if (conectivity) query.conectivity = new RegExp(conectivity, "i");
-      if (aspectRatio) query.aspectRatio = new RegExp(aspectRatio, "i");
-      if (refreshRate) query.refreshRate = new RegExp(refreshRate, "i");
-      if (recommendedResolution)
-        query.recommendedResolution = new RegExp(recommendedResolution, "i");
-      if (review) query.review = new RegExp(review, "i");
-      if (mainboard) query.mainboard = new RegExp(mainboard, "i");
-      if (radiators) query.radiators = new RegExp(radiators, "i");
-      if (hardDrive) query.hardDrive = new RegExp(hardDrive, "i");
-      if (card) query.card = new RegExp(card, "i");
-      if (caseTower) query.caseTower = new RegExp(caseTower, "i");
-      if (psu) query.psu = new RegExp(psu, "i");
-      if (material) query.material = new RegExp(material, "i");
-      if (high) query.high = new RegExp(high, "i");
-      if (mouseType) query.mouseType = new RegExp(mouseType, "i");
-      if (utilities) query.utilities = new RegExp(utilities, "i");
-      if (ergonomics) query.ergonomics = new RegExp(ergonomics, "i");
-      if (requestSystem) query.requestSystem = new RegExp(requestSystem, "i");
-      if (guarantee) query.guarantee = new RegExp(guarantee, "i");
-      if (keyboardType) query.keyboardType = new RegExp(keyboardType, "i");
-      if (hearType) query.hearType = new RegExp(hearType, "i");
+      // Tìm danh mục theo tên
+      const category = await Category.findOne({ name: categoryName });
 
-      // Thực hiện tìm kiếm trong cơ sở dữ liệu
-      const products = await Product.find(query).populate("category_id");
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+
+      // Xác định tiêu chí sắp xếp
+      const sortCriteria = {};
+      switch (sortBy) {
+        case "name":
+          sortCriteria.name = order === "asc" ? 1 : -1;
+          break;
+        case "price":
+          sortCriteria.price = order === "asc" ? 1 : -1;
+          break;
+        case "average_star":
+          sortCriteria.average_star = order === "asc" ? 1 : -1;
+          break;
+        case "sold_quantity":
+          sortCriteria.sold_quantity = order === "asc" ? 1 : -1;
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid sort criteria" });
+      }
+
+      // Tạo đối tượng lọc
+      const filterCriteria = {
+        category_id: category._id,
+        price: { $gte: parseFloat(minPrice), $lte: parseFloat(maxPrice) },
+      };
+
+      if (Array.isArray(trademark) && trademark.length > 0) {
+        filterCriteria.trademark = { $in: trademark };
+      }
+
+      // Tìm và sắp xếp sản phẩm dựa trên tiêu chí
+      const products = await Product.find(filterCriteria).sort(sortCriteria);
+
       return res.status(200).json({ data: products });
     } catch (error) {
       return res.status(500).json({ message: error.message });
