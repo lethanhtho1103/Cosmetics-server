@@ -118,11 +118,10 @@ class ProductController {
     }
   }
 
-  async getProductsById(req, res) {
+  async getProductByName(req, res) {
     try {
-      const productId = req.params.id;
-      const product = await Product.findById(productId).populate("category_id");
-
+      const { nameProduct } = req.query;
+      const product = await Product.findOne({ name: nameProduct });
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
