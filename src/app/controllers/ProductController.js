@@ -8,9 +8,11 @@ class ProductController {
     const upload = multer({ storage: storage }).single("image");
     upload(req, res, async function (err) {
       if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: err.message });
+        return res
+          .status(400)
+          .json({ error: "Lỗi khi tải lên tệp: " + err.message });
       } else if (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: "Lỗi hệ thống: " + err.message });
       } else {
         try {
           const name = req.body.name;
@@ -27,14 +29,16 @@ class ProductController {
           if (category_id) {
             const categoryExists = await Category.findById(category_id);
             if (!categoryExists) {
-              return res.status(400).json({ message: "Invalid category_id" });
+              return res
+                .status(400)
+                .json({ message: "ID danh mục không hợp lệ" });
             }
           }
           if (existingProduct) {
             existingProduct.quantity += quantity;
             await existingProduct.save();
             return res.json({
-              message: "Product updated successfully",
+              message: "Sản phẩm đã được cập nhật thành công",
               data: existingProduct,
             });
           } else {
@@ -51,12 +55,12 @@ class ProductController {
             });
             await newProduct.save();
             return res.status(200).json({
-              message: `Category created successfully: ${name}.`,
+              message: `Sản phẩm đã được tạo thành công: ${name}.`,
               data: newProduct,
             });
           }
         } catch (error) {
-          res.status(500).json({ message: error.message });
+          res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
         }
       }
     });
@@ -77,7 +81,7 @@ class ProductController {
       const category = await Category.findOne({ name: categoryName });
 
       if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Danh mục không tìm thấy" });
       }
 
       // Xác định tiêu chí sắp xếp
@@ -96,7 +100,9 @@ class ProductController {
           sortCriteria.sold_quantity = order === "asc" ? 1 : -1;
           break;
         default:
-          return res.status(400).json({ message: "Invalid sort criteria" });
+          return res
+            .status(400)
+            .json({ message: "Tiêu chí sắp xếp không hợp lệ" });
       }
 
       // Tạo đối tượng lọc
@@ -114,20 +120,37 @@ class ProductController {
 
       return res.status(200).json({ data: products });
     } catch (error) {
-      return res.status(500).json({ message: error.message });
+      return res
+        .status(500)
+        .json({ message: "Lỗi hệ thống: " + error.message });
     }
   }
 
   async getProductByName(req, res) {
     try {
       const { nameProduct } = req.query;
-      const product = await Product.findOne({ name: nameProduct });
+
+      // Check for exact match first
+      let product = await Product.findOne({ name: nameProduct });
+
+      // If no exact match, try partial match
       if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+        product = await Product.find({
+          name: { $regex: nameProduct, $options: "i" },
+        });
+
+        // If no partial matches, return 404 with an empty array
+        if (!product || product.length === 0) {
+          return res
+            .status(404)
+            .json({ message: "Sản phẩm không tìm thấy", data: [] });
+        }
       }
+
+      // Return the product(s) found
       res.status(200).json({ data: product });
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
     }
   }
 
@@ -135,9 +158,11 @@ class ProductController {
     const upload = multer({ storage: storage }).single("image");
     upload(req, res, async function (err) {
       if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: err.message });
+        return res
+          .status(400)
+          .json({ error: "Lỗi khi tải lên tệp: " + err.message });
       } else if (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: "Lỗi hệ thống: " + err.message });
       } else {
         try {
           const productId = req.params.id;
@@ -154,12 +179,14 @@ class ProductController {
           if (category_id) {
             const categoryExists = await Category.findById(category_id);
             if (!categoryExists) {
-              return res.status(400).json({ message: "Invalid category_id" });
+              return res
+                .status(400)
+                .json({ message: "ID danh mục không hợp lệ" });
             }
           }
           const product = await Product.findById(productId);
           if (!product) {
-            return res.status(404).json({ message: "Product not found" });
+            return res.status(404).json({ message: "Sản phẩm không tìm thấy" });
           }
           if (name) product.name = name;
           if (description) product.description = description;
@@ -173,11 +200,11 @@ class ProductController {
 
           await product.save();
           return res.status(200).json({
-            message: `Product updated successfully: ${product.name}.`,
+            message: `Sản phẩm đã được cập nhật thành công.`,
             data: product,
           });
         } catch (error) {
-          res.status(500).json({ message: error.message });
+          res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
         }
       }
     });
@@ -188,34 +215,15 @@ class ProductController {
       const { id } = req.params;
       const deletedProduct = await Product.findByIdAndDelete(id);
       if (!deletedProduct) {
-        return res.status(404).json({ message: "Product not found" });
+        return res.status(404).json({ message: "Sản phẩm không tìm thấy" });
       }
       return res.status(200).json({
-        message: `Product deleted successfully: ${deletedProduct.name}.`,
+        message: `Sản phẩm đã được xóa thành công.`,
       });
     } catch (error) {
-      return res.status(500).json({ message: error.message });
-    }
-  }
-
-  async getProductsByCriteria(req, res) {
-    try {
-      const { sortBy = "sold_quantity", order = "desc" } = req.query;
-      const validSortBy = ["sold_quantity", "average_star", "price"];
-      if (!validSortBy.includes(sortBy)) {
-        return res.status(400).json({ message: "Invalid sortBy value" });
-      }
-      const validOrder = ["asc", "desc"];
-      if (!validOrder.includes(order)) {
-        return res.status(400).json({ message: "Invalid order value" });
-      }
-      const sortOrder = order === "asc" ? 1 : -1;
-      const products = await Product.find()
-        .sort({ [sortBy]: sortOrder })
-        .populate("category_id");
-      return res.status(200).json({ data: products });
-    } catch (error) {
-      return res.status(500).json({ message: error.message });
+      return res
+        .status(500)
+        .json({ message: "Lỗi hệ thống: " + error.message });
     }
   }
 }
