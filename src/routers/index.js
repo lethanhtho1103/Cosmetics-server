@@ -7,6 +7,7 @@ const cart = require("./cart");
 const order = require("./order");
 const google = require("./google");
 const facebook = require("./facebook");
+const paypal = require("./paypal");
 
 function route(app) {
   app.use("/api/authentication", auth);
@@ -19,6 +20,7 @@ function route(app) {
 
   app.use("/", facebook);
   app.use("/", google);
+  app.use("/", paypal);
 }
 
 module.exports = route;

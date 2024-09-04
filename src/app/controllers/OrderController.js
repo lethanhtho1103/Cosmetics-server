@@ -7,8 +7,7 @@ const User = require("../models/User");
 
 class OrderController {
   async createOrder(req, res) {
-    const { userId, orderFromCart, orderDetails, singleCartItem, isPayment } =
-      req.body;
+    const { userId, products, isPayment } = req.body;
     try {
       const user = await User.findById(userId);
       if (!user) {
@@ -17,129 +16,24 @@ class OrderController {
       const { email } = user;
       const paymentStatus = isPayment === "yes" ? "yes" : "no";
 
-      if (orderFromCart) {
-        const userCart = await Cart.findOne({ user_id: userId });
-        if (!userCart) {
-          return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
-        }
-        if (singleCartItem) {
-          const { product_id } = singleCartItem;
-          const item = userCart.items.find(
-            (item) => item.product_id == product_id
-          );
+      const userCart = await Cart.findOne({ user_id: userId });
+      if (!userCart) {
+        return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+      }
 
-          if (!item) {
-            return res
-              .status(404)
-              .json({ message: "Sản phẩm không có trong giỏ hàng" });
-          }
+      let totalPrice = 0;
+      const orderItems = [];
 
-          const quantity = item.quantity;
-          const product = await Product.findById(product_id);
-          if (!product) {
-            return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-          }
-          if (quantity > product.quantity) {
-            return res
-              .status(400)
-              .json({ message: "Không đủ số lượng sản phẩm" });
-          }
+      // Ensure the savedOrder variable is declared and initialized properly
+      const newOrder = new Order({
+        user_id: userId,
+        status: "pending",
+        is_payment: paymentStatus,
+      });
+      const savedOrder = await newOrder.save();
 
-          const newOrder = new Order({
-            user_id: userId,
-            status: "pending",
-            is_payment: paymentStatus, // Add payment status
-          });
-          const savedOrder = await newOrder.save();
-
-          const productTotalPrice = product.price * quantity;
-          const newOrderDetail = new OrderDetail({
-            order_id: savedOrder._id,
-            product_id,
-            quantity,
-            unit_price: product.price,
-          });
-          await newOrderDetail.save();
-
-          product.quantity -= quantity;
-          product.sold_quantity += quantity; // Tăng số lượng đã bán
-          await product.save();
-
-          await Cart.updateOne(
-            { _id: userCart._id },
-            { $pull: { items: { product_id } } }
-          );
-
-          savedOrder.total_price = productTotalPrice;
-          await savedOrder.save();
-
-          const orderController = new OrderController();
-          await orderController.sendConfirmationEmail(email);
-
-          return res
-            .status(200)
-            .json({ message: "Đặt hàng thành công", data: savedOrder });
-        } else {
-          for (const item of userCart.items) {
-            const { product_id, quantity } = item;
-            const product = await Product.findById(product_id);
-            if (!product) {
-              return res
-                .status(404)
-                .json({ message: "Không tìm thấy sản phẩm" });
-            }
-            if (quantity > product.quantity) {
-              return res
-                .status(400)
-                .json({ message: "Không đủ số lượng sản phẩm" });
-            }
-          }
-
-          const newOrder = new Order({
-            user_id: userId,
-            status: "pending",
-            is_payment: paymentStatus, // Add payment status
-          });
-          const savedOrder = await newOrder.save();
-          let totalPrice = 0;
-
-          for (const item of userCart.items) {
-            const { product_id, quantity } = item;
-            const product = await Product.findById(product_id);
-            const productTotalPrice = product.price * quantity;
-            totalPrice += productTotalPrice;
-
-            const newOrderDetail = new OrderDetail({
-              order_id: savedOrder._id,
-              product_id,
-              quantity,
-              unit_price: product.price,
-            });
-            await newOrderDetail.save();
-
-            product.quantity -= quantity;
-            product.sold_quantity += quantity; // Tăng số lượng đã bán
-            await product.save();
-
-            await Cart.updateOne(
-              { _id: userCart._id },
-              { $pull: { items: { product_id } } }
-            );
-          }
-          savedOrder.total_price = totalPrice;
-          await savedOrder.save();
-
-          // const orderController = new OrderController();
-          // await orderController.sendConfirmationEmail(email);
-
-          return res
-            .status(200)
-            .json({ message: "Đặt hàng thành công", data: savedOrder });
-        }
-      } else {
-        const { product_id, quantity, unit_price } = orderDetails;
+      for (const { product_id, quantity } of products) {
         const product = await Product.findById(product_id);
-
         if (!product) {
           return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
         }
@@ -149,31 +43,39 @@ class OrderController {
             .json({ message: "Không đủ số lượng sản phẩm" });
         }
 
-        const newOrder = new Order({
-          user_id: userId,
-          status: "pending",
-          is_payment: paymentStatus, // Add payment status
-        });
-        const savedOrder = await newOrder.save();
         const productTotalPrice = product.price * quantity;
+        totalPrice += productTotalPrice;
+
         const newOrderDetail = new OrderDetail({
           order_id: savedOrder._id,
           product_id,
           quantity,
-          unit_price,
+          unit_price: product.price,
         });
         await newOrderDetail.save();
+
         product.quantity -= quantity;
         product.sold_quantity += quantity;
         await product.save();
-        savedOrder.total_price = productTotalPrice;
-        await savedOrder.save();
-        // const orderController = new OrderController();
-        // await orderController.sendConfirmationEmail(email);
-        return res
-          .status(200)
-          .json({ message: "Đặt hàng thành công", data: savedOrder });
+
+        orderItems.push({ product_id, quantity });
+
+        await Cart.updateOne(
+          { _id: userCart._id },
+          { $pull: { items: { product_id } } }
+        );
       }
+
+      savedOrder.total_price = totalPrice;
+      await savedOrder.save();
+
+      // Optionally send confirmation email
+      // const orderController = new OrderController();
+      // await orderController.sendConfirmationEmail(email);
+
+      return res
+        .status(200)
+        .json({ message: "Đặt hàng thành công.", data: savedOrder });
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
