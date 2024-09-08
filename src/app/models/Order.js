@@ -10,14 +10,19 @@ const OrderSchema = new Schema({
   total_price: { type: Number, default: 0 },
   status: {
     type: String,
-    enum: ["pending", "accepted", "denied"],
+    enum: ["pending", "accepted", "denied", "delivered"],
     required: true,
   },
+
   is_payment: {
     type: String,
     enum: ["yes", "no"],
     required: true,
     default: "no",
+  },
+  delivery_status: {
+    type: String,
+    default: "Order placed",
   },
 });
 

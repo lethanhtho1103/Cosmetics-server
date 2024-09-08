@@ -22,9 +22,22 @@ const User = new Schema({
     type: String,
     defaultValue: "LOCAL",
   },
+  province: {
+    type: String,
+    defaultValue: "",
+  },
+  district: {
+    type: String,
+    defaultValue: "",
+  },
+  ward: {
+    type: String,
+    defaultValue: "",
+  },
   address: {
     type: String,
     minLength: 5,
+    defaultValue: "",
   },
   phone: {
     type: String,

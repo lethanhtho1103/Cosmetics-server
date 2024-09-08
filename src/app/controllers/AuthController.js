@@ -160,26 +160,24 @@ class AuthController {
       } else {
         try {
           const userId = req.params.id;
-          const { username, email, password, address } = req.body;
-
-          if (email && !validator.isEmail(email)) {
-            return res
-              .status(400)
-              .json({ error: "Định dạng email không hợp lệ" });
-          }
+          const { username, phone, address, province, district, ward } =
+            req.body;
 
           const user = await User.findById(userId);
           if (!user) {
             return res.status(404).json({ error: "Người dùng không tồn tại" });
           }
 
+          // Thêm các trường nếu chúng chưa tồn tại
+          if (!user.province) user.province = province || "";
+          if (!user.district) user.district = district || "";
+          if (!user.ward) user.ward = ward || "";
+
+          // Cập nhật thông tin người dùng
           if (username) user.username = username;
-          if (email) user.email = email;
+          if (phone) user.phone = phone;
           if (address) user.address = address;
-          if (password) {
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(password, salt);
-          }
+
           if (req.file) user.avatar = req.file.originalname;
 
           const updatedUser = await user.save();
