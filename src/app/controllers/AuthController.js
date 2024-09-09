@@ -168,25 +168,28 @@ class AuthController {
             return res.status(404).json({ error: "Người dùng không tồn tại" });
           }
 
-          // Thêm các trường nếu chúng chưa tồn tại
-          if (!user.province) user.province = province || "";
-          if (!user.district) user.district = district || "";
-          if (!user.ward) user.ward = ward || "";
-
-          // Cập nhật thông tin người dùng
+          // Cập nhật hoặc thêm các trường thông tin của người dùng
           if (username) user.username = username;
           if (phone) user.phone = phone;
           if (address) user.address = address;
 
-          if (req.file) user.avatar = req.file.originalname;
+          // Cập nhật hoặc thêm trường province, district, ward
+          if (province) user.province = province;
+          if (district) user.district = district;
+          if (ward) user.ward = ward;
+
+          // Cập nhật avatar nếu có tệp mới
+          if (req.file) {
+            user.avatar = req.file.originalname;
+          }
 
           const updatedUser = await user.save();
           return res.status(200).json({
-            message: "Cập nhật thông tin người dùng thành công.",
+            message: "Cập nhật thành công.",
             data: updatedUser,
           });
         } catch (error) {
-          res.status(500).json({ message: error.message });
+          return res.status(500).json({ message: error.message });
         }
       }
     });
