@@ -144,7 +144,10 @@ class OrderController {
       if (!user) {
         return res.status(404).json({ message: "Không tìm thấy người dùng" });
       }
-      const orders = await Order.find({ user_id: userId });
+      const orders = await Order.find({ user_id: userId }).sort({
+        order_date: -1,
+      });
+
       const ordersWithDetails = [];
       for (const order of orders) {
         const orderDetails = await OrderDetail.find({
@@ -214,7 +217,7 @@ class OrderController {
 
   async updateOrderStatus(req, res) {
     const { orderId, status } = req.body;
-    const allowedStatuses = ["pending", "accepted", "denied"];
+    const allowedStatuses = ["pending", "accepted", "denied", "delivered"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: "Trạng thái không hợp lệ" });
