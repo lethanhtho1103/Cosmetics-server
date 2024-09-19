@@ -88,10 +88,9 @@ class CommentController {
       return res.status(400).json({ message: "ID sản phẩm không hợp lệ." });
     }
     try {
-      const comments = await Comment.find({ product_id }).populate(
-        "user_id",
-        "username avatar"
-      );
+      const comments = await Comment.find({ product_id })
+        .sort({ comment_date: -1 })
+        .populate("user_id", "username avatar");
       res.status(200).json({ data: comments });
     } catch (error) {
       res.status(500).json({ message: "Có lỗi xảy ra.", error });
