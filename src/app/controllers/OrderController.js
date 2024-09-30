@@ -152,7 +152,7 @@ class OrderController {
       for (const order of orders) {
         const orderDetails = await OrderDetail.find({
           order_id: order._id,
-        }).populate("product_id", "name price image"); // Populate thêm thông tin sản phẩm
+        }).populate("product_id", "name price image");
 
         const orderWithDetails = {
           ...order._doc,
@@ -177,20 +177,50 @@ class OrderController {
     }
   }
 
+  async getOrderById(req, res) {
+    const orderId = req.params.orderId;
+    try {
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+        return res.status(404).json({ message: "Đơn hàng không tồn tại" });
+      }
+
+      // Get order details
+      const orderDetails = await OrderDetail.find({
+        order_id: order._id,
+      }).populate("product_id", "name price image");
+
+      // Combine order with its details
+      const orderWithDetails = {
+        ...order._doc,
+        orderDetails: orderDetails.map((detail) => ({
+          _id: detail._id,
+          product_id: detail.product_id._id,
+          product_name: detail.product_id.name,
+          product_image: detail.product_id.image,
+          unit_price: detail.unit_price,
+          quantity: detail.quantity,
+        })),
+      };
+
+      return res.status(200).json({
+        message: "Lấy đơn hàng thành công",
+        data: orderWithDetails,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+
   async getAllOrders(req, res) {
     try {
-      // Tìm tất cả các đơn hàng
-      const orders = await Order.find();
-
+      const orders = await Order.find().populate("user_id", "username");
       const ordersWithDetails = [];
-
       for (const order of orders) {
-        // Tìm tất cả các chi tiết đơn hàng tương ứng với order_id
         const orderDetails = await OrderDetail.find({
           order_id: order._id,
-        }).populate("product_id", "name price image"); // Populate thêm thông tin sản phẩm
-
-        // Kết hợp đơn hàng và chi tiết đơn hàng
+        }).populate("product_id", "name price image");
         const orderWithDetails = {
           ...order._doc,
           orderDetails: orderDetails.map((detail) => ({

@@ -55,7 +55,7 @@ class ProductController {
             });
             await newProduct.save();
             return res.status(200).json({
-              message: `Sản phẩm đã được tạo thành công: ${name}.`,
+              message: "Thêm sản phẩm thành công.",
               data: newProduct,
             });
           }
