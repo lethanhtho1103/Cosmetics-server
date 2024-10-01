@@ -215,7 +215,9 @@ class OrderController {
 
   async getAllOrders(req, res) {
     try {
-      const orders = await Order.find().populate("user_id", "username");
+      const orders = await Order.find()
+        .populate("user_id", "username")
+        .sort({ order_date: -1 });
       const ordersWithDetails = [];
       for (const order of orders) {
         const orderDetails = await OrderDetail.find({

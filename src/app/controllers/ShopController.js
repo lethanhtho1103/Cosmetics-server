@@ -6,14 +6,14 @@ class ShopController {
     try {
       const { name } = req.body;
       if (!name) {
-        return res.status(400).json({ message: "Name is required" });
+        return res.status(400).json({ message: "Tên danh mục là bắt buộc" });
       }
       const newShop = new Shop({
         name,
       });
       await newShop.save();
       return res.status(200).json({
-        message: `Shop created successfully: ${name}.`,
+        message: `Tạo danh mục thành công: ${name}.`,
         data: newShop,
       });
     } catch (error) {
@@ -27,22 +27,22 @@ class ShopController {
       const ShopsWithCosmetics = await Promise.all(
         shops.map(async (shop) => {
           const Cosmetics = await Cosmetic.aggregate([
-            { $match: { shop_id: shop._id } }, // Lọc các cosmetics theo shop_id
+            { $match: { shop_id: shop._id } },
             {
               $lookup: {
-                from: "categories", // Tên collection của Category
-                localField: "category_ids", // Thay đổi từ category_id thành category_ids
+                from: "categories",
+                localField: "category_ids",
                 foreignField: "_id",
                 as: "categories",
               },
             },
             {
               $project: {
-                name: 1, // Lấy tên của Cosmetic
-                shop_id: 1, // Giữ lại shop_id
+                name: 1,
+                shop_id: 1,
                 categories: {
-                  _id: 1, // Lấy id từ categories
-                  name: 1, // Lấy name từ categories
+                  _id: 1,
+                  name: 1,
                 },
               },
             },
@@ -65,7 +65,7 @@ class ShopController {
       const shopId = req.params.id;
       const shop = await Shop.findById(shopId);
       if (!shop) {
-        return res.status(404).json({ message: "Shop not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       const cosmetics = await Cosmetic.find({ shop_id: shop._id });
       const shopWithCosmetics = {
@@ -85,13 +85,13 @@ class ShopController {
 
       const shop = await Shop.findById(shopId);
       if (!shop) {
-        return res.status(404).json({ message: "Shop not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       if (name) shop.name = name;
 
       await shop.save();
       return res.status(200).json({
-        message: `Shop updated successfully: ${shop.name}.`,
+        message: `Cập nhật danh mục thành công: ${shop.name}.`,
         data: shop,
       });
     } catch (error) {
@@ -105,11 +105,11 @@ class ShopController {
       const deletedShop = await Shop.findByIdAndDelete(id);
 
       if (!deletedShop) {
-        return res.status(404).json({ message: "Shop not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
 
       return res.status(200).json({
-        message: `Shop deleted successfully: ${deletedShop.name}.`,
+        message: `Xóa danh mục thành công: ${deletedShop.name}.`,
       });
     } catch (error) {
       return res.status(500).json({ message: error.message });
