@@ -7,12 +7,12 @@ class CosmeticController {
     try {
       const { name, shop_id } = req.body;
       if (!name) {
-        return res.status(400).json({ message: "Name is required" });
+        return res.status(400).json({ message: "Tên là bắt buộc" });
       }
       if (shop_id) {
         const shopExists = await Shop.findById(shop_id);
         if (!shopExists) {
-          return res.status(400).json({ message: "Invalid shop_id" });
+          return res.status(400).json({ message: "Mã cửa hàng không hợp lệ" });
         }
       }
       const newCosmetic = new Cosmetic({
@@ -21,7 +21,7 @@ class CosmeticController {
       });
       await newCosmetic.save();
       return res.status(200).json({
-        message: `Cosmetic created successfully: ${name}.`,
+        message: `Tạo danh mục thành công: ${name}.`,
         data: newCosmetic,
       });
     } catch (error) {
@@ -56,7 +56,7 @@ class CosmeticController {
       const cosmeticId = req.params.id;
       const cosmetic = await Cosmetic.findById(cosmeticId);
       if (!cosmetic) {
-        return res.status(404).json({ message: "Cosmetic not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       const categories = await Category.find({ cosmetic_id: cosmetic._id });
       const cosmeticWithCategories = {
@@ -73,16 +73,18 @@ class CosmeticController {
     try {
       const CosmeticId = req.params.id;
       const name = req.body.name;
+      const shop_id = req.body.shop_id;
 
       const cosmetic = await Cosmetic.findById(CosmeticId);
       if (!cosmetic) {
-        return res.status(404).json({ message: "Cosmetic not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       if (name) cosmetic.name = name;
+      if (shop_id) cosmetic.shop_id = shop_id;
 
       await cosmetic.save();
       return res.status(200).json({
-        message: `Cosmetic updated successfully: ${cosmetic.name}.`,
+        message: `Cập nhật danh mục thành công: ${cosmetic.name}.`,
         data: cosmetic,
       });
     } catch (error) {
@@ -96,11 +98,11 @@ class CosmeticController {
       const deletedCosmetic = await Cosmetic.findByIdAndDelete(id);
 
       if (!deletedCosmetic) {
-        return res.status(404).json({ message: "Cosmetic not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
 
       return res.status(200).json({
-        message: `Cosmetic deleted successfully: ${deletedCosmetic.name}.`,
+        message: `Xóa danh mục thành công: ${deletedCosmetic.name}.`,
       });
     } catch (error) {
       return res.status(500).json({ message: error.message });

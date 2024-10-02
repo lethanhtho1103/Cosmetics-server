@@ -68,10 +68,18 @@ class ShopController {
         return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       const cosmetics = await Cosmetic.find({ shop_id: shop._id });
+
+      // Loại bỏ trường category_ids
+      const cosmeticsWithoutCategoryIds = cosmetics.map((cosmetic) => {
+        const { category_ids, ...cosmeticWithoutCategoryIds } = cosmetic._doc;
+        return cosmeticWithoutCategoryIds;
+      });
+
       const shopWithCosmetics = {
         ...shop._doc,
-        cosmetics,
+        cosmetics: cosmeticsWithoutCategoryIds,
       };
+
       return res.status(200).json(shopWithCosmetics);
     } catch (error) {
       return res.status(500).json({ message: error.message });
