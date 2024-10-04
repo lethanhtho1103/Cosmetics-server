@@ -11,5 +11,6 @@ router.post("/login-admin", authController.loginAdmin);
 router.put("/update-user/:id", authController.updateUser);
 router.post("/logout", userMiddleware.verifyToken, authController.logoutUser);
 router.post("/refresh", authController.requestRefreshToken);
+router.get("/get-all-users", authController.getAllUser);
 
 module.exports = router;

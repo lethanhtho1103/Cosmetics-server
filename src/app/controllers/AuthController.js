@@ -17,7 +17,8 @@ class AuthController {
         return res.status(500).json({ error: "Lỗi tải lên tệp" });
       } else {
         try {
-          const { username, email, password, address, phone } = req.body;
+          const { username, email, password, address, phone, date_of_birth } =
+            req.body;
           const salt = await bcrypt.genSalt(10);
           const hashed = await bcrypt.hash(password, salt);
           const avatar = req.file ? req.file.originalname : null;
@@ -32,6 +33,7 @@ class AuthController {
               address,
               phone,
               avatar,
+              date_of_birth: new Date(date_of_birth),
               admin: false,
               type: "LOCAL",
             });
@@ -193,6 +195,17 @@ class AuthController {
       }
     } catch (error) {
       console.log(error);
+    }
+  }
+
+  async getAllUser(req, res) {
+    try {
+      const users = await User.find();
+      return res.status(200).json({ data: users });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Đã xảy ra lỗi, vui lòng thử lại sau." });
     }
   }
 

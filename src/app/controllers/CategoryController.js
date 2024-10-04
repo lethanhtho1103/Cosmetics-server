@@ -7,12 +7,12 @@ class CategoryController {
     try {
       const { name, cosmetic_id } = req.body;
       if (!name) {
-        return res.status(400).json({ message: "Name is required" });
+        return res.status(400).json({ message: "Tên danh mục là bắt buộc" });
       }
       if (cosmetic_id) {
         const cosmeticExists = await Cosmetic.findById(cosmetic_id);
         if (!cosmeticExists) {
-          return res.status(400).json({ message: "Invalid cosmetic_id" });
+          return res.status(400).json({ message: "cosmetic_id không hợp lệ" });
         }
       }
 
@@ -28,7 +28,7 @@ class CategoryController {
         });
       }
       return res.status(200).json({
-        message: `Category created successfully: ${name}.`,
+        message: `Tạo danh mục thành công: ${name}.`,
         data: newCategory,
       });
     } catch (error) {
@@ -62,7 +62,7 @@ class CategoryController {
       const categoryId = req.params.id;
       const category = await Category.findById(categoryId);
       if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       const products = await Product.find({ category_id: category._id });
       const categoryWithProducts = {
@@ -84,12 +84,12 @@ class CategoryController {
 
       const category = await Category.findById(categoryId);
       if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
       if (cosmetic_id) {
         const CosmeticExists = await Cosmetic.findById(cosmetic_id);
         if (!CosmeticExists) {
-          return res.status(400).json({ message: "Invalid cosmetic_id" });
+          return res.status(400).json({ message: "cosmetic_id không hợp lệ" });
         }
       }
       if (name) category.name = name;
@@ -97,7 +97,7 @@ class CategoryController {
 
       await category.save();
       return res.status(200).json({
-        message: `category updated successfully: ${category.name}.`,
+        message: `Cập nhật danh mục thành công: ${category.name}.`,
         data: category,
       });
     } catch (error) {
@@ -112,11 +112,11 @@ class CategoryController {
       const deletedCategory = await Category.findByIdAndDelete(id);
 
       if (!deletedCategory) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Không tìm thấy danh mục" });
       }
 
       return res.status(200).json({
-        message: `Category deleted successfully: ${deletedCategory.name}.`,
+        message: `Xóa danh mục thành công: ${deletedCategory.name}.`,
       });
     } catch (error) {
       return res.status(500).json({ message: error.message });

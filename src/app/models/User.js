@@ -42,6 +42,10 @@ const User = new Schema({
   phone: {
     type: String,
   },
+  date_of_birth: {
+    type: Date,
+    default: new Date("2000-01-01"),
+  },
   avatar: {
     type: String,
     default: null,
@@ -50,6 +54,7 @@ const User = new Schema({
     type: Boolean,
     default: false,
   },
+  createdAt: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("User", User);
