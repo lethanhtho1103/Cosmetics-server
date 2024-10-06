@@ -8,7 +8,6 @@ router.post("/", orderController.createOrder);
 router.get("/users", orderController.getAllOrders);
 router.put("/update/status", orderController.updateOrderStatus);
 router.put("/update/is-payment", orderController.updatePaymentStatus);
-router.get("/statistics/month", orderController.getOrderStatisticsByMonth);
 router.get("/user/:userId", orderController.getAllOrdersByUserId);
 router.get("/:orderId", orderController.getOrderById);
 

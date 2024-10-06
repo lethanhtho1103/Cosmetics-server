@@ -7,6 +7,7 @@ const cart = require("./cart");
 const order = require("./order");
 const contact = require("./contact");
 const comment = require("./comment");
+const statistics = require("./statistics");
 const google = require("./google");
 const facebook = require("./facebook");
 const paypal = require("./paypal");
@@ -21,6 +22,7 @@ function route(app) {
   app.use("/api/order", order);
   app.use("/api/contact", contact);
   app.use("/api/comment", comment);
+  app.use("/api/statistics", statistics);
 
   app.use("/", facebook);
   app.use("/", google);
