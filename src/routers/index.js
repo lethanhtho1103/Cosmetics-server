@@ -8,6 +8,8 @@ const order = require("./order");
 const contact = require("./contact");
 const comment = require("./comment");
 const statistics = require("./statistics");
+const promotion = require("./promotion");
+const product_promotion = require("./product_promotion");
 const google = require("./google");
 const facebook = require("./facebook");
 const paypal = require("./paypal");
@@ -23,6 +25,8 @@ function route(app) {
   app.use("/api/contact", contact);
   app.use("/api/comment", comment);
   app.use("/api/statistics", statistics);
+  app.use("/api/promotions", promotion);
+  app.use("/api/products/promotions", product_promotion);
 
   app.use("/", facebook);
   app.use("/", google);
