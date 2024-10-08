@@ -154,6 +154,15 @@ class ProductController {
     }
   }
 
+  async getAllProduct(req, res) {
+    try {
+      let products = await Product.find().select("_id name");
+      res.status(200).json({ data: products });
+    } catch (error) {
+      res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
+    }
+  }
+
   async updateProduct(req, res, next) {
     const upload = multer({ storage: storage }).single("image");
     upload(req, res, async function (err) {

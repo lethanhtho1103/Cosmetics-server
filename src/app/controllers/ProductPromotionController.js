@@ -26,7 +26,10 @@ class ProductPromotionController {
   async getProductPromotions(req, res) {
     try {
       const productPromotions = await ProductPromotion.find()
-        .populate("product_id")
+        .populate({
+          path: "product_id",
+          select: "_id name",
+        })
         .populate("promotion_id");
 
       return res.status(200).json(productPromotions);

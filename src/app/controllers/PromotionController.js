@@ -43,28 +43,29 @@ class ProductController {
         });
       }
 
-      // Kiểm tra ngày bắt đầu và kết thúc
       if (new Date(start_date) >= new Date(end_date)) {
         return res
           .status(400)
           .json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
       }
 
-      // Tạo khuyến mãi mới
       const promotion = new Promotion({
         name,
         discount_type,
         discount_value:
-          discount_type === "buy_one_get_one" ? undefined : discount_value, // Không cần giá trị giảm giá cho 'buy_one_get_one'
+          discount_type === "buy_one_get_one" ? undefined : discount_value,
         start_date,
         end_date,
-        status: "inactive", // Mặc định ban đầu là 'inactive', sau đó sẽ tự động cập nhật
+        status: "inactive",
       });
 
       // Cập nhật trạng thái dựa trên ngày hiện tại
       await updatePromotionStatus(promotion);
 
-      return res.status(201).json(promotion);
+      return res.status(201).json({
+        message: "Tạo khuyễn mãi thành công.",
+        promotion: promotion,
+      });
     } catch (error) {
       return res.status(500).json({ message: "Lỗi máy chủ", error });
     }
@@ -140,10 +141,12 @@ class ProductController {
       if (status && ["active", "inactive", "expired"].includes(status))
         promotion.status = status;
 
-      // Cập nhật trạng thái khuyến mãi dựa trên ngày hiện tại
       await updatePromotionStatus(promotion);
 
-      return res.status(200).json(promotion);
+      return res.status(200).json({
+        message: "Cập nhật thành công.",
+        promotion,
+      });
     } catch (error) {
       return res.status(500).json({ message: "Lỗi máy chủ", error });
     }
