@@ -17,7 +17,10 @@ class ProductPromotionController {
       });
 
       await productPromotion.save();
-      return res.status(201).json(productPromotion);
+      return res.status(201).json({
+        message: "Tạo sản phẩm khuyến mãi thành công.",
+        productPromotion,
+      });
     } catch (error) {
       return res.status(500).json({ message: "Lỗi server", error });
     }
@@ -49,9 +52,14 @@ class ProductPromotionController {
       }
 
       const productPromotion = await ProductPromotion.findById(id)
-        .populate("product_id")
-        .populate("promotion_id");
-
+        .populate({
+          path: "product_id",
+          select: "_id",
+        })
+        .populate({
+          path: "promotion_id",
+          select: "_id status",
+        });
       if (!productPromotion) {
         return res
           .status(404)
@@ -75,7 +83,6 @@ class ProductPromotionController {
           .json({ message: "ID ProductPromotion là bắt buộc" });
       }
 
-      // Tìm mối quan hệ khuyến mãi cần cập nhật
       const productPromotion = await ProductPromotion.findById(id);
 
       if (!productPromotion) {
@@ -89,7 +96,10 @@ class ProductPromotionController {
       if (promotion_id) productPromotion.promotion_id = promotion_id;
 
       await productPromotion.save();
-      return res.status(200).json(productPromotion);
+      return res.status(200).json({
+        message: "Cập nhật sản phẩm khuyến mãi thành công.",
+        productPromotion,
+      });
     } catch (error) {
       return res.status(500).json({ message: "Lỗi server", error });
     }
@@ -102,7 +112,7 @@ class ProductPromotionController {
       if (!id) {
         return res
           .status(400)
-          .json({ message: "ID ProductPromotion là bắt buộc" });
+          .json({ message: "ID ProductPromotion là bắt buộc." });
       }
 
       const productPromotion = await ProductPromotion.findByIdAndDelete(id);
@@ -112,9 +122,7 @@ class ProductPromotionController {
           .json({ message: "ProductPromotion không tồn tại" });
       }
 
-      return res
-        .status(200)
-        .json({ message: "Xóa ProductPromotion thành công" });
+      return res.status(200).json({ message: "Xóa thành công." });
     } catch (error) {
       return res.status(500).json({ message: "Lỗi server", error });
     }

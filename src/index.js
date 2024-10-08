@@ -11,6 +11,7 @@ const db = require("./utils/mongodb.util");
 const route = require("./routers");
 const configLoginWithGoogle = require("./app/controllers/social/GoogleController.js");
 const configLoginWithFacebook = require("./app/controllers/social/FacebookController.js");
+const { setupPromotionCronJob } = require("./utils/promotion.util.js");
 
 const app = express();
 const PORT = config.app.port;
@@ -32,6 +33,9 @@ app.use(passport.session());
 configLoginWithGoogle();
 configLoginWithFacebook();
 route(app);
+
+// Thiết lập cron job cập nhật trạng thái khuyến mãi
+setupPromotionCronJob();
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

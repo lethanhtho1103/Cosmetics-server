@@ -1,21 +1,6 @@
 const Promotion = require("../models/Promotion");
 
-async function updatePromotionStatus(promotion) {
-  const today = new Date();
-  if (
-    today >= new Date(promotion.start_date) &&
-    today <= new Date(promotion.end_date)
-  ) {
-    promotion.status = "active";
-  } else if (today > new Date(promotion.end_date)) {
-    promotion.status = "expired";
-  } else if (today < new Date(promotion.start_date)) {
-    promotion.status = "inactive";
-  }
-  await promotion.save();
-}
-
-class ProductController {
+class PromotionController {
   async createPromotion(req, res) {
     try {
       const { name, discount_type, discount_value, start_date, end_date } =
@@ -59,9 +44,6 @@ class ProductController {
         status: "inactive",
       });
 
-      // Cập nhật trạng thái dựa trên ngày hiện tại
-      await updatePromotionStatus(promotion);
-
       return res.status(201).json({
         message: "Tạo khuyễn mãi thành công.",
         promotion: promotion,
@@ -74,12 +56,6 @@ class ProductController {
   async getPromotions(req, res) {
     try {
       const promotions = await Promotion.find();
-
-      // Cập nhật trạng thái của từng khuyến mãi
-      for (let promotion of promotions) {
-        await updatePromotionStatus(promotion);
-      }
-
       return res.status(200).json(promotions);
     } catch (error) {
       return res.status(500).json({ message: "Lỗi máy chủ", error });
@@ -97,9 +73,6 @@ class ProductController {
       if (!promotion) {
         return res.status(404).json({ message: "Không tìm thấy khuyến mãi" });
       }
-      // Cập nhật trạng thái khuyến mãi trước khi trả về
-      await updatePromotionStatus(promotion);
-
       return res.status(200).json(promotion);
     } catch (error) {
       return res.status(500).json({ message: "Lỗi máy chủ", error });
@@ -141,8 +114,6 @@ class ProductController {
       if (status && ["active", "inactive", "expired"].includes(status))
         promotion.status = status;
 
-      await updatePromotionStatus(promotion);
-
       return res.status(200).json({
         message: "Cập nhật thành công.",
         promotion,
@@ -173,4 +144,4 @@ class ProductController {
   }
 }
 
-module.exports = new ProductController();
+module.exports = new PromotionController();
