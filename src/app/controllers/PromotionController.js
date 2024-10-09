@@ -5,19 +5,16 @@ class PromotionController {
     try {
       const { name, discount_type, discount_value, start_date, end_date } =
         req.body;
-
       if (!name || !discount_type || !start_date || !end_date) {
         return res
           .status(400)
           .json({ message: "Tất cả các trường đều bắt buộc" });
       }
-
       if (!["percent", "fixed", "buy_one_get_one"].includes(discount_type)) {
         return res
           .status(400)
           .json({ message: "Loại khuyến mãi không hợp lệ" });
       }
-
       if (
         ["percent", "fixed"].includes(discount_type) &&
         (!discount_value || discount_value <= 0)
@@ -27,7 +24,6 @@ class PromotionController {
             "Giá trị giảm giá phải lớn hơn 0 đối với loại phần trăm hoặc cố định",
         });
       }
-
       if (new Date(start_date) >= new Date(end_date)) {
         return res
           .status(400)
@@ -43,6 +39,7 @@ class PromotionController {
         end_date,
         status: "inactive",
       });
+      await promotion.save();
 
       return res.status(201).json({
         message: "Tạo khuyễn mãi thành công.",

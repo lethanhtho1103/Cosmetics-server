@@ -2,6 +2,7 @@ const multer = require("multer");
 const Product = require("../models/Product");
 const storage = require("../../services/uploadImage");
 const Category = require("../models/Category");
+const ProductPromotion = require("../models/ProductPromotion");
 
 class ProductController {
   async createProduct(req, res, next) {
@@ -84,7 +85,7 @@ class ProductController {
         return res.status(404).json({ message: "Danh mục không tìm thấy" });
       }
 
-      // Xác định tiêu chí sắp xếp
+      // Thiết lập tiêu chí sắp xếp
       const sortCriteria = {};
       switch (sortBy) {
         case "name":
@@ -105,7 +106,7 @@ class ProductController {
             .json({ message: "Tiêu chí sắp xếp không hợp lệ" });
       }
 
-      // Tạo đối tượng lọc
+      // Thiết lập tiêu chí lọc
       const filterCriteria = {
         category_id: category._id,
         price: { $gte: parseFloat(minPrice), $lte: parseFloat(maxPrice) },
@@ -115,10 +116,30 @@ class ProductController {
         filterCriteria.trademark = { $in: trademark };
       }
 
-      // Tìm và sắp xếp sản phẩm dựa trên tiêu chí
+      // Lấy danh sách sản phẩm
       const products = await Product.find(filterCriteria).sort(sortCriteria);
 
-      return res.status(200).json({ data: products });
+      // Lấy danh sách các sản phẩm khuyến mãi liên quan
+      const productPromotions = await ProductPromotion.find({
+        product_id: { $in: products.map((product) => product._id) },
+      }).populate("promotion_id");
+
+      // Tạo một đối tượng để dễ dàng truy cập thông tin khuyến mãi theo product_id
+      const promotionsMap = {};
+      productPromotions.forEach((productPromotion) => {
+        promotionsMap[productPromotion.product_id] =
+          productPromotion.promotion_id;
+      });
+
+      // Kết hợp sản phẩm với khuyến mãi
+      const productsWithPromotions = products.map((product) => {
+        return {
+          ...product.toObject(),
+          promotion: promotionsMap[product._id] || null, // Gán khuyến mãi nếu có, nếu không thì null
+        };
+      });
+
+      return res.status(200).json({ data: productsWithPromotions });
     } catch (error) {
       return res
         .status(500)
@@ -131,7 +152,9 @@ class ProductController {
       const { nameProduct } = req.query;
 
       // Check for exact match first
-      let product = await Product.findOne({ name: nameProduct });
+      let product = await Product.findOne({
+        name: nameProduct.trim().replace(/[\n\r]+/g, ""),
+      });
 
       // If no exact match, try partial match
       if (!product) {
@@ -147,8 +170,36 @@ class ProductController {
         }
       }
 
+      // If product is an array (partial match), find the promotions for each product
+      const productIds = Array.isArray(product)
+        ? product.map((p) => p._id)
+        : [product._id];
+
+      // Lấy danh sách các sản phẩm khuyến mãi liên quan
+      const productPromotions = await ProductPromotion.find({
+        product_id: { $in: productIds },
+      }).populate("promotion_id");
+
+      // Tạo một đối tượng để dễ dàng truy cập thông tin khuyến mãi theo product_id
+      const promotionsMap = {};
+      productPromotions.forEach((productPromotion) => {
+        promotionsMap[productPromotion.product_id] =
+          productPromotion.promotion_id;
+      });
+
+      // Kết hợp sản phẩm với khuyến mãi
+      const productsWithPromotions = Array.isArray(product)
+        ? product.map((prod) => ({
+            ...prod.toObject(),
+            promotion: promotionsMap[prod._id] || null, // Gán khuyến mãi nếu có, nếu không thì null
+          }))
+        : {
+            ...product.toObject(),
+            promotion: promotionsMap[product._id] || null, // Gán khuyến mãi nếu có, nếu không thì null
+          };
+
       // Return the product(s) found
-      res.status(200).json({ data: product });
+      res.status(200).json({ data: productsWithPromotions });
     } catch (error) {
       res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
     }

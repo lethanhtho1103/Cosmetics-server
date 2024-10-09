@@ -127,6 +127,37 @@ class ProductPromotionController {
       return res.status(500).json({ message: "Lỗi server", error });
     }
   }
+
+  async getProductsByPromotionId(req, res) {
+    try {
+      const { promotion_id } = req.params;
+
+      if (!promotion_id) {
+        return res.status(400).json({ message: "promotion_id là bắt buộc" });
+      }
+
+      const productPromotions = await ProductPromotion.find({
+        promotion_id,
+      })
+        .populate({
+          path: "product_id",
+        })
+        .populate({
+          path: "promotion_id",
+          select: "start_date end_date status discount_value",
+        });
+
+      if (!productPromotions || productPromotions.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Không tìm thấy sản phẩm cho promotion_id này" });
+      }
+
+      return res.status(200).json(productPromotions);
+    } catch (error) {
+      return res.status(500).json({ message: "Lỗi server", error });
+    }
+  }
 }
 
 module.exports = new ProductPromotionController();
