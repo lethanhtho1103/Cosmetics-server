@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const ProductPromotion = require("../models/ProductPromotion");
+const Promotion = require("../models/Promotion"); //
 
 class CartController {
   async addToCart(req, res) {
@@ -67,11 +69,9 @@ class CartController {
             .json({ message: `ID sản phẩm không hợp lệ: ${productId}` });
         }
         if (!Number.isInteger(quantity) || quantity <= 0) {
-          return res
-            .status(400)
-            .json({
-              message: `Số lượng không hợp lệ cho sản phẩm có ID: ${productId}`,
-            });
+          return res.status(400).json({
+            message: `Số lượng không hợp lệ cho sản phẩm có ID: ${productId}`,
+          });
         }
       }
 
@@ -107,21 +107,47 @@ class CartController {
   async getCart(req, res) {
     try {
       const { userId } = req.params;
-
-      // Kiểm tra tính hợp lệ của userId
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ message: "ID người dùng không hợp lệ" });
       }
 
-      const cart = await Cart.findOne({ user_id: userId }).populate(
-        "items.product_id"
-      );
+      const cart = await Cart.findOne({ user_id: userId }).populate({
+        path: "items.product_id",
+        select:
+          "-average_star -comment_count -sold_quantity -category_id -expiry -trademark",
+      });
 
       if (!cart) {
         return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
       }
 
-      return res.status(200).json({ data: cart });
+      const productIds = cart.items.map((item) => item.product_id._id);
+
+      const productPromotions = await ProductPromotion.find({
+        product_id: { $in: productIds },
+      }).populate({
+        path: "promotion_id",
+        match: { status: "active" },
+        select: "discount_value status",
+      });
+
+      const promotionMap = productPromotions.reduce((acc, item) => {
+        acc[item.product_id] = item.promotion_id;
+        return acc;
+      }, {});
+
+      const cartWithPromotions = cart.items.map((item) => {
+        const product = item.product_id.toObject();
+        product.promotion = promotionMap[product._id] || null;
+        return {
+          ...item.toObject(),
+          product_id: product,
+        };
+      });
+
+      return res
+        .status(200)
+        .json({ data: { ...cart.toObject(), items: cartWithPromotions } });
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }

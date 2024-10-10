@@ -4,6 +4,8 @@ const Order = require("../models/Order");
 const OrderDetail = require("../models/OrderDetail");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const ProductPromotion = require("../models/ProductPromotion");
+const Promotion = require("../models/Promotion");
 
 class OrderController {
   async createOrder(req, res) {
@@ -13,7 +15,6 @@ class OrderController {
       if (!user) {
         return res.status(404).json({ message: "Không tìm thấy người dùng" });
       }
-      const { email } = user;
       const paymentStatus = isPayment === "yes" ? "yes" : "no";
 
       const userCart = await Cart.findOne({ user_id: userId });
@@ -24,7 +25,6 @@ class OrderController {
       let totalPrice = 0;
       const orderItems = [];
 
-      // Ensure the savedOrder variable is declared and initialized properly
       const newOrder = new Order({
         user_id: userId,
         status: "pending",
@@ -43,29 +43,51 @@ class OrderController {
             .json({ message: "Không đủ số lượng sản phẩm" });
         }
 
-        const productTotalPrice = product.price * quantity;
+        const productPromotion = await ProductPromotion.findOne({ product_id });
+        let unitPrice = product.price;
+
+        if (productPromotion) {
+          const promotion = await Promotion.findById(
+            productPromotion.promotion_id
+          );
+
+          if (promotion && promotion.status === "active") {
+            // Apply discount based on the type
+            if (promotion.discount_type === "percent") {
+              const discountAmount =
+                (promotion.discount_value / 100) * unitPrice;
+              unitPrice = Math.max(0, unitPrice - discountAmount);
+            }
+          }
+        }
+
+        const productTotalPrice = unitPrice * quantity;
         totalPrice += productTotalPrice;
 
+        // Save the order details with the (possibly) discounted price
         const newOrderDetail = new OrderDetail({
           order_id: savedOrder._id,
           product_id,
           quantity,
-          unit_price: product.price,
+          unit_price: unitPrice, // Use the discounted price if applicable
         });
         await newOrderDetail.save();
 
+        // Update product stock and sold quantity
         product.quantity -= quantity;
         product.sold_quantity += quantity;
         await product.save();
 
         orderItems.push({ product_id, quantity });
 
+        // Remove the item from the user's cart
         await Cart.updateOne(
           { _id: userCart._id },
           { $pull: { items: { product_id } } }
         );
       }
 
+      // Update the total price of the order
       savedOrder.total_price = totalPrice;
       await savedOrder.save();
 
