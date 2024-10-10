@@ -147,22 +147,55 @@ class ProductController {
     }
   }
 
+  async getTopSellingProducts(req, res) {
+    try {
+      const products = await Product.find()
+        .sort({ sold_quantity: -1 })
+        .limit(20)
+        .lean();
+
+      if (!products || products.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Không có sản phẩm bán chạy", data: [] });
+      }
+
+      const productIds = products.map((prod) => prod._id);
+      const productPromotions = await ProductPromotion.find({
+        product_id: { $in: productIds },
+      }).populate("promotion_id");
+
+      const promotionsMap = {};
+      productPromotions.forEach((productPromotion) => {
+        promotionsMap[productPromotion.product_id] =
+          productPromotion.promotion_id;
+      });
+
+      const productsWithPromotions = products.map((prod) => ({
+        ...prod,
+        promotion: promotionsMap[prod._id] || null,
+      }));
+
+      // Return the top selling products
+      res.status(200).json({ data: productsWithPromotions });
+    } catch (error) {
+      res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
+    }
+  }
+
   async getProductByName(req, res) {
     try {
       const { nameProduct } = req.query;
 
-      // Check for exact match first
       let product = await Product.findOne({
         name: nameProduct.trim().replace(/[\n\r]+/g, ""),
       });
 
-      // If no exact match, try partial match
       if (!product) {
         product = await Product.find({
           name: { $regex: nameProduct, $options: "i" },
         });
 
-        // If no partial matches, return 404 with an empty array
         if (!product || product.length === 0) {
           return res
             .status(404)
@@ -170,32 +203,28 @@ class ProductController {
         }
       }
 
-      // If product is an array (partial match), find the promotions for each product
       const productIds = Array.isArray(product)
         ? product.map((p) => p._id)
         : [product._id];
 
-      // Lấy danh sách các sản phẩm khuyến mãi liên quan
       const productPromotions = await ProductPromotion.find({
         product_id: { $in: productIds },
       }).populate("promotion_id");
 
-      // Tạo một đối tượng để dễ dàng truy cập thông tin khuyến mãi theo product_id
       const promotionsMap = {};
       productPromotions.forEach((productPromotion) => {
         promotionsMap[productPromotion.product_id] =
           productPromotion.promotion_id;
       });
 
-      // Kết hợp sản phẩm với khuyến mãi
       const productsWithPromotions = Array.isArray(product)
         ? product.map((prod) => ({
             ...prod.toObject(),
-            promotion: promotionsMap[prod._id] || null, // Gán khuyến mãi nếu có, nếu không thì null
+            promotion: promotionsMap[prod._id] || null,
           }))
         : {
             ...product.toObject(),
-            promotion: promotionsMap[product._id] || null, // Gán khuyến mãi nếu có, nếu không thì null
+            promotion: promotionsMap[product._id] || null,
           };
 
       // Return the product(s) found
