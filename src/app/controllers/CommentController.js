@@ -7,7 +7,6 @@ const Comment = require("../models/Comment");
 class CommentController {
   async createComment(req, res) {
     const { user_id, product_id, star, content } = req.body;
-
     try {
       const orders = await Order.find({ user_id });
 

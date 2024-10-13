@@ -4,6 +4,7 @@ const router = express.Router();
 const statistics = require("../app/controllers/Statistics");
 
 router.get("/", statistics.statistics);
+router.get("/top-categories-sales", statistics.getTopCategoriesBySales);
 router.get("/order/month", statistics.getOrderStatisticsByMonth);
 
 module.exports = router;

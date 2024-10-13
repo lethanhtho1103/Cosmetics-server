@@ -1,13 +1,14 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const Users = require("../models/User");
+
 const dayjs = require("dayjs");
 
 class StatisticsController {
   async statistics(req, res) {
     try {
-      const [totalRevenueResult, totalProducts, totalUsers] = await Promise.all(
-        [
+      const [totalRevenueResult, totalProducts, totalUsers, totalOrders] =
+        await Promise.all([
           Order.aggregate([
             {
               $group: {
@@ -18,8 +19,8 @@ class StatisticsController {
           ]),
           Product.countDocuments(),
           Users.countDocuments(),
-        ]
-      );
+          Order.countDocuments(),
+        ]);
 
       res.status(200).json({
         totalRevenue:
@@ -28,6 +29,7 @@ class StatisticsController {
             : 0,
         totalProducts,
         totalUsers,
+        totalOrders,
       });
     } catch (error) {
       console.error(error);
@@ -98,6 +100,74 @@ class StatisticsController {
       });
     } catch (error) {
       return res.status(500).json({ message: error.message });
+    }
+  }
+
+  async getTopCategoriesBySales(req, res) {
+    try {
+      // Step 1: Aggregate sales data by category
+      const categorySales = await Product.aggregate([
+        // Group by category and sum the sold_quantity
+        {
+          $group: {
+            _id: "$category_id",
+            totalSold: { $sum: "$sold_quantity" },
+          },
+        },
+        // Lookup category name
+        {
+          $lookup: {
+            from: "categories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "category",
+          },
+        },
+        // Unwind the category array
+        { $unwind: "$category" },
+        // Project necessary fields
+        {
+          $project: {
+            categoryName: "$category.name",
+            totalSold: 1,
+          },
+        },
+        { $sort: { totalSold: -1 } },
+      ]);
+
+      // Step 2: Calculate total sold quantity
+      const totalSales = categorySales.reduce(
+        (acc, item) => acc + item.totalSold,
+        0
+      );
+
+      // Step 3: Identify top 5 categories
+      const top5Categories = categorySales.slice(0, 5);
+
+      // Step 4: Calculate sales percentage for each category
+      const top5WithPercentage = top5Categories.map((category) => ({
+        name: category.categoryName,
+        value: parseFloat(((category.totalSold / totalSales) * 100).toFixed(2)),
+      }));
+
+      // Step 5: Calculate the "Other" category percentage
+      const otherSales = categorySales
+        .slice(5)
+        .reduce((acc, item) => acc + item.totalSold, 0);
+      const otherPercentage = ((otherSales / totalSales) * 100).toFixed(2);
+
+      // Step 6: Combine results with the "Other" category
+      const result = [
+        ...top5WithPercentage,
+        {
+          name: "Khác",
+          value: parseFloat(otherPercentage),
+        },
+      ];
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error calculating category sales:", error);
     }
   }
 }

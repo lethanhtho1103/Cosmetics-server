@@ -35,7 +35,7 @@ class ContactController {
 
   async getAllContacts(req, res) {
     try {
-      const contacts = await Contact.find();
+      const contacts = await Contact.find().sort({ contact_date: -1 });
       return res.status(200).json({ data: contacts });
     } catch (error) {
       return res
