@@ -9,7 +9,8 @@ const Promotion = require("../models/Promotion");
 
 class OrderController {
   async createOrder(req, res) {
-    const { userId, products, isPayment } = req.body;
+    const { userId, products, isPayment, shipping_method, shipping_cost } =
+      req.body;
     try {
       const user = await User.findById(userId);
       if (!user) {
@@ -29,6 +30,8 @@ class OrderController {
         user_id: userId,
         status: "pending",
         is_payment: paymentStatus,
+        shipping_method,
+        shipping_cost,
       });
       const savedOrder = await newOrder.save();
 
@@ -50,9 +53,7 @@ class OrderController {
           const promotion = await Promotion.findById(
             productPromotion.promotion_id
           );
-
           if (promotion && promotion.status === "active") {
-            // Apply discount based on the type
             if (promotion.discount_type === "percent") {
               const discountAmount =
                 (promotion.discount_value / 100) * unitPrice;
@@ -64,36 +65,29 @@ class OrderController {
         const productTotalPrice = unitPrice * quantity;
         totalPrice += productTotalPrice;
 
-        // Save the order details with the (possibly) discounted price
         const newOrderDetail = new OrderDetail({
           order_id: savedOrder._id,
           product_id,
           quantity,
-          unit_price: unitPrice, // Use the discounted price if applicable
+          unit_price: unitPrice,
         });
         await newOrderDetail.save();
 
-        // Update product stock and sold quantity
         product.quantity -= quantity;
         product.sold_quantity += quantity;
         await product.save();
 
         orderItems.push({ product_id, quantity });
 
-        // Remove the item from the user's cart
         await Cart.updateOne(
           { _id: userCart._id },
           { $pull: { items: { product_id } } }
         );
       }
 
-      // Update the total price of the order
-      savedOrder.total_price = totalPrice;
+      // Thêm shipping_cost vào tổng giá
+      savedOrder.total_price = totalPrice + shipping_cost;
       await savedOrder.save();
-
-      // Optionally send confirmation email
-      // const orderController = new OrderController();
-      // await orderController.sendConfirmationEmail(email);
 
       return res
         .status(200)

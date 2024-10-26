@@ -13,7 +13,6 @@ const OrderSchema = new Schema({
     enum: ["pending", "denied", "shipped", "delivered"],
     required: true,
   },
-
   is_payment: {
     type: String,
     enum: ["yes", "no"],
@@ -24,6 +23,12 @@ const OrderSchema = new Schema({
     type: String,
     default: "Order placed",
   },
+  shipping_method: {
+    type: String,
+    enum: ["standard", "express"],
+    required: true,
+  },
+  shipping_cost: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model("Order", OrderSchema);

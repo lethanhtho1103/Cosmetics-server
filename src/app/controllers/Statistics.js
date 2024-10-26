@@ -56,6 +56,7 @@ class StatisticsController {
         count: 0,
         totalRevenue: 0,
       }));
+
       // Lấy thống kê số lượng đơn hàng của các ngày trong tháng cụ thể
       const stats = await Order.aggregate([
         {
@@ -82,9 +83,11 @@ class StatisticsController {
       ]);
 
       // Gộp dữ liệu thống kê vào tất cả các ngày
+      let monthlyTotalRevenue = 0;
       const result = allDaysInMonth.map((day) => {
         const statForDay = stats.find((stat) => stat._id.day === day.day);
         if (statForDay) {
+          monthlyTotalRevenue += statForDay.totalRevenue; // Tính tổng doanh thu cả tháng
           return {
             day: day.day,
             count: statForDay.count,
@@ -96,6 +99,7 @@ class StatisticsController {
 
       return res.status(200).json({
         message: `Thống kê số đơn hàng ${month}/${year}`,
+        totalMonthlyRevenue: monthlyTotalRevenue,
         data: result,
       });
     } catch (error) {
