@@ -17,8 +17,7 @@ class AuthController {
         return res.status(500).json({ error: "Lỗi tải lên tệp" });
       } else {
         try {
-          const { username, email, password, address, phone, date_of_birth } =
-            req.body;
+          const { username, email, password, phone, date_of_birth } = req.body;
           const salt = await bcrypt.genSalt(10);
           const hashed = await bcrypt.hash(password, salt);
           const avatar = req.file ? req.file.originalname : null;
@@ -30,7 +29,6 @@ class AuthController {
               username,
               email,
               password: hashed,
-              address,
               phone,
               avatar,
               date_of_birth: new Date(date_of_birth),
@@ -264,12 +262,9 @@ class AuthController {
             return res.status(404).json({ error: "Người dùng không tồn tại" });
           }
 
-          // Cập nhật hoặc thêm các trường thông tin của người dùng
           if (username) user.username = username;
           if (phone) user.phone = phone;
           if (address) user.address = address;
-
-          // Cập nhật hoặc thêm trường province, district, ward
           if (province) user.province = province;
           if (district) user.district = district;
           if (ward) user.ward = ward;

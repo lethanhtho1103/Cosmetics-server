@@ -26,7 +26,6 @@ const OrderSchema = new Schema({
   shipping_method: {
     type: String,
     enum: ["standard", "express"],
-    required: true,
   },
   shipping_cost: { type: Number, default: 0 },
 });
