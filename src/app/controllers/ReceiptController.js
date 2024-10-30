@@ -141,6 +141,47 @@ const ReceiptController = {
         .json({ message: "Lỗi khi cập nhật chi tiết phiếu nhập", error });
     }
   },
+
+  async deleteReceiptDetail(req, res) {
+    try {
+      const receiptDetailId = req.params.receiptDetailId;
+
+      // Xóa chi tiết phiếu nhập
+      const deletedReceiptDetail = await ReceiptDetail.findByIdAndDelete(
+        receiptDetailId
+      );
+
+      if (!deletedReceiptDetail) {
+        return res
+          .status(404)
+          .json({ message: "Không tìm thấy chi tiết phiếu nhập để xóa" });
+      }
+
+      // Lấy tất cả các chi tiết phiếu nhập của Receipt liên quan để tính lại tổng tiền
+      const receiptDetails = await ReceiptDetail.find({
+        receipt_id: deletedReceiptDetail.receipt_id,
+      });
+
+      const total_price = receiptDetails.reduce(
+        (sum, detail) => sum + detail.quantity * detail.import_price,
+        0
+      );
+
+      // Cập nhật lại total_price trong Receipt
+      await Receipt.findByIdAndUpdate(deletedReceiptDetail.receipt_id, {
+        total_price,
+      });
+
+      res.status(200).json({
+        message: "Xóa chi tiết phiếu nhập thành công",
+        total_price,
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Lỗi khi xóa chi tiết phiếu nhập", error });
+    }
+  },
 };
 
 module.exports = ReceiptController;
