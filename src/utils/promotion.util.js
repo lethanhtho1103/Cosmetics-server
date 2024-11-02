@@ -28,7 +28,7 @@ async function updateAllPromotionsStatus() {
   }
 }
 
-// Thiết lập cron job chạy mỗi ngày
+// Thiết lập cron job chạy mỗi giờ
 function setupPromotionCronJob() {
   cron.schedule("0 0 * * *", () => {
     console.log("Chạy cron job cập nhật trạng thái khuyến mãi...");

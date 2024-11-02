@@ -19,7 +19,7 @@ class StatisticsController {
           ]),
           Product.countDocuments(),
           Users.countDocuments(),
-          Order.countDocuments(),
+          Order.countDocuments({ status: "pending" }),
         ]);
 
       res.status(200).json({
@@ -107,6 +107,68 @@ class StatisticsController {
     }
   }
 
+  async getOrderStatisticsByYear(req, res) {
+    const { year } = req.query;
+    if (!year) {
+      return res.status(400).json({ message: "Vui lòng cung cấp năm" });
+    }
+
+    try {
+      const parsedYear = parseInt(year);
+
+      // Tạo danh sách tất cả các tháng trong năm đó
+      const allMonthsInYear = Array.from({ length: 12 }, (v, i) => ({
+        month: i + 1,
+        count: 0,
+        totalRevenue: 0,
+      }));
+
+      // Lấy thống kê số lượng đơn hàng của các tháng trong năm cụ thể
+      const stats = await Order.aggregate([
+        {
+          $match: {
+            $expr: {
+              $eq: [{ $year: "$order_date" }, parsedYear],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: { month: { $month: "$order_date" } },
+            count: { $sum: 1 },
+            totalRevenue: { $sum: "$total_price" },
+          },
+        },
+      ]);
+
+      // Gộp dữ liệu thống kê vào tất cả các tháng
+      let yearlyTotalRevenue = 0;
+      const result = allMonthsInYear.map((month) => {
+        const statForMonth = stats.find(
+          (stat) => stat._id.month === month.month
+        );
+        if (statForMonth) {
+          yearlyTotalRevenue += statForMonth.totalRevenue; // Tính tổng doanh thu cả năm
+          return {
+            month: month.month,
+            count: statForMonth.count,
+            totalRevenue: statForMonth.totalRevenue,
+          };
+        }
+        return month;
+      });
+
+      return res.status(200).json({
+        message: `Thống kê đơn hàng năm ${year}`,
+        totalYearlyRevenue: yearlyTotalRevenue,
+        data: result,
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy thống kê theo năm:", error);
+      return res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+    }
+  }
+
   async getTopCategoriesBySales(req, res) {
     try {
       // Step 1: Aggregate sales data by category
@@ -172,6 +234,28 @@ class StatisticsController {
       return res.status(200).json(result);
     } catch (error) {
       console.error("Error calculating category sales:", error);
+    }
+  }
+
+  async getTopProductsBySales(req, res) {
+    try {
+      const topProducts = await Product.find()
+        .sort({ sold_quantity: -1 })
+        .limit(9)
+        .select("name sold_quantity price image")
+        .lean();
+
+      if (topProducts.length === 0) {
+        return res.status(404).json({ message: "Không có sản phẩm nào." });
+      }
+
+      return res.status(200).json({
+        message: "10 sản phẩm bán chạy nhất",
+        data: topProducts,
+      });
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách sản phẩm bán chạy:", error);
+      return res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
     }
   }
 }
