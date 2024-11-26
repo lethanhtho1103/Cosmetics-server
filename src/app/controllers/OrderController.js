@@ -232,7 +232,7 @@ class OrderController {
   async getAllOrders(req, res) {
     try {
       const orders = await Order.find()
-        .populate("user_id", "username")
+        .populate("user_id", "username phone")
         .sort({ order_date: -1 });
       const ordersWithDetails = [];
       for (const order of orders) {

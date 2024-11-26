@@ -78,14 +78,12 @@ class ProductController {
         trademark = [],
       } = req.query;
 
-      // Tìm danh mục theo tên
       const category = await Category.findOne({ name: categoryName });
 
       if (!category) {
         return res.status(404).json({ message: "Danh mục không tìm thấy" });
       }
 
-      // Thiết lập tiêu chí sắp xếp
       const sortCriteria = {};
       switch (sortBy) {
         case "name":
@@ -236,7 +234,7 @@ class ProductController {
 
   async getAllProduct(req, res) {
     try {
-      let products = await Product.find().select("_id name");
+      let products = await Product.find();
       res.status(200).json({ data: products });
     } catch (error) {
       res.status(500).json({ message: "Lỗi hệ thống: " + error.message });

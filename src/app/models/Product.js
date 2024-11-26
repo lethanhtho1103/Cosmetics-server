@@ -16,6 +16,7 @@ const Product = new Schema({
   },
   quantity: {
     type: Number,
+    default: 0
   },
   origin: {
     type: String,
