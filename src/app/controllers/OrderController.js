@@ -266,27 +266,41 @@ class OrderController {
   async updateOrderStatus(req, res) {
     const { orderId, status } = req.body;
     const allowedStatuses = ["pending", "shipped", "denied", "delivered"];
-
+  
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: "Trạng thái không hợp lệ" });
     }
-
+  
     try {
       const order = await Order.findById(orderId);
       if (!order) {
         return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
       }
-
+  
+      const previousStatus = order.status;
+  
       order.status = status;
+  
+      if (status === "denied" && previousStatus !== "denied") {
+        const orderDetails = await OrderDetail.find({ order_id: orderId });
+  
+        for (let orderDetail of orderDetails) {
+          const product = await Product.findById(orderDetail.product_id);
+          if (product) {
+            product.quantity += orderDetail.quantity;
+            await product.save();
+          }
+        }
+      }
+  
       await order.save();
-
-      return res
-        .status(200)
-        .json({ message: "Cập nhật trạng thái thành công", data: order });
+  
+      return res.status(200).json({ message: "Cập nhật trạng thái thành công", data: order });
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
   }
+  
 
   async updatePaymentStatus(req, res) {
     const { orderId, is_payment } = req.body;
