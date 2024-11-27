@@ -77,13 +77,11 @@ class ProductController {
         maxPrice = Infinity,
         trademark = [],
       } = req.query;
-
       const category = await Category.findOne({ name: categoryName });
 
       if (!category) {
         return res.status(404).json({ message: "Danh mục không tìm thấy" });
       }
-
       const sortCriteria = {};
       switch (sortBy) {
         case "name":
@@ -99,82 +97,72 @@ class ProductController {
           sortCriteria.sold_quantity = order === "asc" ? 1 : -1;
           break;
         default:
-          return res
-            .status(400)
-            .json({ message: "Tiêu chí sắp xếp không hợp lệ" });
+          return res.status(400).json({ message: "Tiêu chí sắp xếp không hợp lệ" });
       }
-
-      // Thiết lập tiêu chí lọc
+  
       const filterCriteria = {
         category_id: category._id,
         price: { $gte: parseFloat(minPrice), $lte: parseFloat(maxPrice) },
       };
-
+  
       if (Array.isArray(trademark) && trademark.length > 0) {
         filterCriteria.trademark = { $in: trademark };
       }
-
-      // Lấy danh sách sản phẩm
+  
       const products = await Product.find(filterCriteria).sort(sortCriteria);
-
-      // Lấy danh sách các sản phẩm khuyến mãi liên quan
+  
+      if (!products || products.length === 0) {
+        return res.status(404).json({ message: "Không có sản phẩm nào trong danh mục này" });
+      }
+  
       const productPromotions = await ProductPromotion.find({
         product_id: { $in: products.map((product) => product._id) },
       }).populate("promotion_id");
-
-      // Tạo một đối tượng để dễ dàng truy cập thông tin khuyến mãi theo product_id
+  
       const promotionsMap = {};
       productPromotions.forEach((productPromotion) => {
-        promotionsMap[productPromotion.product_id] =
-          productPromotion.promotion_id;
+        promotionsMap[productPromotion.product_id] = productPromotion.promotion_id;
       });
-
-      // Kết hợp sản phẩm với khuyến mãi
-      const productsWithPromotions = products.map((product) => {
-        return {
-          ...product.toObject(),
-          promotion: promotionsMap[product._id] || null, // Gán khuyến mãi nếu có, nếu không thì null
-        };
-      });
-
+  
+      const productsWithPromotions = products.map((product) => ({
+        ...product.toObject(),
+        promotion_id: promotionsMap[product._id] || null,
+      }));
+  
+      // Trả về kết quả
       return res.status(200).json({ data: productsWithPromotions });
     } catch (error) {
-      return res
-        .status(500)
-        .json({ message: "Lỗi hệ thống: " + error.message });
+      return res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
     }
   }
+  
 
-  async getTopSellingProducts(req, res) {
+  async  getTopSellingProducts(req, res) {
     try {
       const products = await Product.find()
         .sort({ sold_quantity: -1 })
         .limit(20)
         .lean();
-
+  
       if (!products || products.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Không có sản phẩm bán chạy", data: [] });
+        return res.status(404).json({ message: "Không có sản phẩm bán chạy", data: [] });
       }
-
+  
       const productIds = products.map((prod) => prod._id);
+  
       const productPromotions = await ProductPromotion.find({
         product_id: { $in: productIds },
       }).populate("promotion_id");
-
+  
       const promotionsMap = {};
       productPromotions.forEach((productPromotion) => {
-        promotionsMap[productPromotion.product_id] =
-          productPromotion.promotion_id;
+        promotionsMap[productPromotion.product_id] = productPromotion.promotion_id;
       });
-
+  
       const productsWithPromotions = products.map((prod) => ({
         ...prod,
-        promotion: promotionsMap[prod._id] || null,
+        promotion_id: promotionsMap[prod._id] || null,
       }));
-
-      // Return the top selling products
       res.status(200).json({ data: productsWithPromotions });
     } catch (error) {
       res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
