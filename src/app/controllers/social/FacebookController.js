@@ -10,7 +10,7 @@ const configLoginWithFacebook = () => {
         clientID: process.env.FACEBOOK_APP_ID,
         clientSecret: process.env.FACEBOOK_APP_SECRET,
         callbackURL: process.env.FACEBOOK_APP_REDIRECT_LOGIN,
-        profileFields: ["id", "emails", "name", "displayName"], // Các trường profile bạn muốn lấy từ Facebook
+        profileFields: ["id", "emails", "name", "displayName"],
       },
       async (accessToken, refreshToken, profile, cb) => {
         console.log("Checking Facebook: ", profile);
